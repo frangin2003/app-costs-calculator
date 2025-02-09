@@ -8,6 +8,18 @@ const DEFAULT_PLANS = [
   { name: 'Pro', price: 20, interval: 'monthly', users: 500 }
 ]
 
+const formatQty = (qtyType, qty) => {
+  if (!qtyType || qtyType === 'NA') return 'N/A';
+  
+  if (qty >= 1000000) {
+    return `${qty/1000000}M ${qtyType}s`;
+  } else if (qty >= 1000) {
+    return `${qty/1000}K ${qtyType}s`;
+  } else {
+    return `${qty} ${qtyType}${qty > 1 ? 's' : ''}`;
+  }
+};
+
 const Dashboard = () => {
   const [selectedCosts, setSelectedCosts] = useState([])
   const [plans, setPlans] = useState(() => {
@@ -24,6 +36,20 @@ const Dashboard = () => {
     }
   }, [])
 
+  // Save selected costs to localStorage whenever they change
+  useEffect(() => {
+    const savedCosts = localStorage.getItem('selectedCosts')
+    const allCosts = savedCosts ? JSON.parse(savedCosts) : []
+    
+    // Update quantities for selected costs while preserving other costs
+    const updatedCosts = allCosts.map(cost => {
+      const selectedCost = selectedCosts.find(sc => sc.id === cost.id)
+      return selectedCost || cost
+    })
+    
+    localStorage.setItem('selectedCosts', JSON.stringify(updatedCosts))
+  }, [selectedCosts])
+
   // Listen for changes to plans in localStorage
   useEffect(() => {
     const handleStorageChange = (e) => {
@@ -32,7 +58,6 @@ const Dashboard = () => {
       }
     }
 
-    // Add event listener
     window.addEventListener('storage', handleStorageChange)
 
     // Also check for plans on component mount
@@ -41,7 +66,6 @@ const Dashboard = () => {
       setPlans(JSON.parse(savedPlans))
     }
 
-    // Cleanup
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
@@ -173,7 +197,9 @@ const Dashboard = () => {
               <TableRow className="border-b-2 border-muted hover:bg-transparent">
                 <TableHead>Type</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Cost per Unit</TableHead>
+                <TableHead>Cost Type</TableHead>
+                <TableHead>Cost</TableHead>
+                <TableHead>Unit</TableHead>
                 <TableHead>Qty per User</TableHead>
                 <TableHead>Cost per User</TableHead>
               </TableRow>
@@ -183,7 +209,9 @@ const Dashboard = () => {
                 <TableRow key={cost.id}>
                   <TableCell>{cost.type}</TableCell>
                   <TableCell>{cost.name}</TableCell>
+                  <TableCell>{cost.costType}</TableCell>
                   <TableCell>${cost.cost}</TableCell>
+                  <TableCell>{formatQty(cost.qtyType, cost.qtyPerUser)}</TableCell>
                   <TableCell>
                     <Input
                       type="number"
@@ -193,7 +221,7 @@ const Dashboard = () => {
                       min="0"
                     />
                   </TableCell>
-                  <TableCell>${(cost.cost * cost.qtyPerUser).toFixed(4)}</TableCell>
+                  <TableCell>${(cost.cost * cost.qtyPerUser).toFixed(2)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

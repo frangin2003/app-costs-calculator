@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
-import { Edit2, Copy, Eye, EyeOff, Plus, Save, Trash2 } from 'lucide-react';
+import { Edit2, Copy, Eye, EyeOff, Save, Trash2 } from 'lucide-react';
 
 const CURRENCIES = {
   USD: { symbol: '$', label: 'USD' },
