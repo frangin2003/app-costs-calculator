@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -15,7 +15,10 @@ const CURRENCIES = {
 };
 
 const SubscriptionPlansBuilder = () => {
-  const [plans, setPlans] = useState([]);
+  const [plans, setPlans] = useState(() => {
+    const savedPlans = localStorage.getItem('subscriptionPlans')
+    return savedPlans ? JSON.parse(savedPlans) : []
+  });
   const [editMode, setEditMode] = useState(true);
   const [showAddForm] = useState(true);
   const [draggedPlan, setDraggedPlan] = useState(null);
@@ -27,6 +30,10 @@ const SubscriptionPlansBuilder = () => {
     features: '',
     description: ''
   });
+
+  useEffect(() => {
+    localStorage.setItem('subscriptionPlans', JSON.stringify(plans))
+  }, [plans]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -75,9 +82,9 @@ const SubscriptionPlansBuilder = () => {
           <div class="w-72 rounded-lg shadow-lg p-6 bg-white">
             <h3 class="text-xl font-bold">${plan.name}</h3>
             <div class="text-3xl font-bold my-4">${plan.currency || 'USD'} ${plan.price}/${plan.interval}</div>
-            <p class="text-gray-600 mb-4">${plan.description}</p>
+            <p class="text-gray-600 mb-4">${plan.description || ''}</p>
             <ul class="space-y-2">
-              ${plan.features.split('\n').map(feature => 
+              ${(plan.features || '').split('\n').map(feature => 
                 `<li class="flex items-center">
                   <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -157,7 +164,7 @@ const SubscriptionPlansBuilder = () => {
                 </div>
                 <p className="text-muted-foreground mb-4">{plan.description}</p>
                 <ul className="space-y-2">
-                  {plan.features.split('\n').map((feature, i) => (
+                  {(plan.features || '').split('\n').map((feature, i) => (
                     <li key={i} className="flex items-center">
                       <svg className="w-4 h-4 mr-2 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>

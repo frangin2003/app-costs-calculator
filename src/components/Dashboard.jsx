@@ -1,17 +1,66 @@
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/table'
+import { Input } from './ui/input'
+
+const DEFAULT_PLANS = [
+  { name: 'Basic', price: 10, interval: 'monthly', users: 100 },
+  { name: 'Pro', price: 20, interval: 'monthly', users: 500 }
+]
 
 const Dashboard = () => {
-  // We'll need to access the global state here later
-  const selectedCosts = [
-    { type: 'API', name: 'Google TTS', cost: 0.0002, qtyPerUser: 10000 },
-    { type: 'Hosting', name: 'Replit 4 CPU', cost: 25, qtyPerUser: 1 }
-  ]
+  const [selectedCosts, setSelectedCosts] = useState([])
+  const [plans, setPlans] = useState(() => {
+    const savedPlans = localStorage.getItem('subscriptionPlans')
+    return savedPlans ? JSON.parse(savedPlans) : DEFAULT_PLANS
+  })
 
-  const plans = [
-    { name: 'Basic', price: 10, interval: 'monthly', users: 100 },
-    { name: 'Pro', price: 20, interval: 'monthly', users: 500 }
-  ]
+  // Load selected costs from localStorage
+  useEffect(() => {
+    const savedCosts = localStorage.getItem('selectedCosts')
+    if (savedCosts) {
+      const costs = JSON.parse(savedCosts)
+      setSelectedCosts(costs.filter(cost => cost.selected))
+    }
+  }, [])
+
+  // Listen for changes to plans in localStorage
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'subscriptionPlans' && e.newValue) {
+        setPlans(JSON.parse(e.newValue))
+      }
+    }
+
+    // Add event listener
+    window.addEventListener('storage', handleStorageChange)
+
+    // Also check for plans on component mount
+    const savedPlans = localStorage.getItem('subscriptionPlans')
+    if (savedPlans) {
+      setPlans(JSON.parse(savedPlans))
+    }
+
+    // Cleanup
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
+  // Save plans to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('subscriptionPlans', JSON.stringify(plans))
+  }, [plans])
+
+  const handleQtyChange = (costId, newQty) => {
+    setSelectedCosts(selectedCosts.map(cost =>
+      cost.id === costId ? { ...cost, qtyPerUser: Number(newQty) } : cost
+    ))
+  }
+
+  const handlePlanUserChange = (planName, value) => {
+    setPlans(plans.map(plan =>
+      plan.name === planName ? { ...plan, users: Number(value) } : plan
+    ))
+  }
 
   const calculateMRR = (plan) => {
     return plan.price * plan.users
@@ -93,7 +142,15 @@ const Dashboard = () => {
                   <TableRow key={plan.name}>
                     <TableCell className="font-medium">{plan.name}</TableCell>
                     <TableCell>${plan.price}</TableCell>
-                    <TableCell>{plan.users}</TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={plan.users}
+                        onChange={(e) => handlePlanUserChange(plan.name, e.target.value)}
+                        className="w-24"
+                        min="1"
+                      />
+                    </TableCell>
                     <TableCell>${mrr.toFixed(2)}</TableCell>
                     <TableCell>${costs.toFixed(2)}</TableCell>
                     <TableCell>${profit.toFixed(2)}</TableCell>
@@ -123,11 +180,19 @@ const Dashboard = () => {
             </TableHeader>
             <TableBody>
               {selectedCosts.map((cost) => (
-                <TableRow key={cost.name}>
+                <TableRow key={cost.id}>
                   <TableCell>{cost.type}</TableCell>
                   <TableCell>{cost.name}</TableCell>
                   <TableCell>${cost.cost}</TableCell>
-                  <TableCell>{cost.qtyPerUser}</TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={cost.qtyPerUser}
+                      onChange={(e) => handleQtyChange(cost.id, e.target.value)}
+                      className="w-24"
+                      min="0"
+                    />
+                  </TableCell>
                   <TableCell>${(cost.cost * cost.qtyPerUser).toFixed(4)}</TableCell>
                 </TableRow>
               ))}
